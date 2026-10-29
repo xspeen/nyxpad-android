@@ -113,7 +113,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background),
+            .background(Color.Transparent),
     ) {
         HorizontalPager(
             count = slides.size,

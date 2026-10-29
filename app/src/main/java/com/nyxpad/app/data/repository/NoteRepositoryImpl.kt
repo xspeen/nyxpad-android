@@ -95,6 +95,36 @@ class NoteRepositoryImpl @Inject constructor(
             noteDao.updateMoodTag(id, moodTag)
         }
 
+    override suspend fun updateTags(id: Long, tags: List<String>) =
+        withContext(Dispatchers.IO) {
+            noteDao.updateTags(id, normalizeTags(tags))
+        }
+
+    override suspend fun bulkPin(ids: List<Long>, isPinned: Boolean) =
+        withContext(Dispatchers.IO) {
+            if (ids.isNotEmpty()) noteDao.updatePinStatusBulk(ids, isPinned)
+        }
+
+    override suspend fun bulkArchive(ids: List<Long>, isArchived: Boolean) =
+        withContext(Dispatchers.IO) {
+            if (ids.isNotEmpty()) noteDao.updateArchiveStatusBulk(ids, isArchived)
+        }
+
+    override suspend fun bulkDelete(ids: List<Long>) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) {
+            noteDao.softDeleteNotesBulk(ids, System.currentTimeMillis())
+        }
+    }
+
+    override suspend fun bulkRestore(ids: List<Long>) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) noteDao.restoreNotesBulk(ids)
+    }
+
+    override suspend fun bulkTag(ids: List<Long>, tags: List<String>) =
+        withContext(Dispatchers.IO) {
+            if (ids.isNotEmpty()) noteDao.updateTagsBulk(ids, normalizeTags(tags))
+        }
+
     override suspend fun getTotalNoteCount(): Int = withContext(Dispatchers.IO) {
         noteDao.getTotalNoteCount()
     }
@@ -107,6 +137,15 @@ class NoteRepositoryImpl @Inject constructor(
         noteDao.getAllNotesForExport().map { it.toDomain() }
     }
 
+    override suspend fun getAllNotesForBackup(): List<Note> = withContext(Dispatchers.IO) {
+        noteDao.getAllNotesForBackup().map { it.toDomain() }
+    }
+
+    override suspend fun saveNotes(notes: List<Note>) = withContext(Dispatchers.IO) {
+        noteDao.insertNotes(notes.map { it.copy(id = 0L).toEntity() })
+        Unit
+    }
+
     override suspend fun clearAllNotes() = withContext(Dispatchers.IO) {
         noteDao.clearAllNotes()
     }
@@ -114,15 +153,30 @@ class NoteRepositoryImpl @Inject constructor(
     override fun getTemplates(): Flow<List<NoteTemplate>> =
         templateDao.getTemplates().mapTemplates().flowOn(Dispatchers.IO)
 
+    override suspend fun getTemplatesSnapshot(): List<NoteTemplate> =
+        withContext(Dispatchers.IO) {
+            templateDao.getAllTemplates().map { it.toDomain() }
+        }
+
     override suspend fun saveTemplate(template: NoteTemplate): Long =
         withContext(Dispatchers.IO) {
             templateDao.insertTemplate(template.toEntity())
         }
 
+    override suspend fun clearAllTemplates() = withContext(Dispatchers.IO) {
+        templateDao.clearAllTemplates()
+    }
+
     override suspend fun deleteTemplate(id: Long) = withContext(Dispatchers.IO) {
         templateDao.deleteTemplate(id)
     }
 }
+
+private fun normalizeTags(tags: List<String>): String = tags
+    .map { it.replace(',', ' ').trim() }
+    .filter { it.isNotEmpty() }
+    .distinct()
+    .joinToString(",")
 
 private fun Flow<List<com.nyxpad.app.data.local.NoteEntity>>.mapEntities(): Flow<List<Note>> =
     map { entities -> entities.map { it.toDomain() } }

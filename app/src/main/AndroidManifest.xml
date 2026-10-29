@@ -5,12 +5,18 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- NyxPad never touches the network and never runs foreground work.
-         WorkManager merges these in; strip them from the final APK. -->
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
+    <!-- Online features are optional and off by default. NyxDrop uses a
+         local-only HTTP server so a nearby browser can receive a note. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!-- WorkManager merges FOREGROUND_SERVICE in; strip it from the final APK. -->
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:node="remove" />
@@ -27,6 +33,7 @@
         android:theme="@style/Theme.NyxPad.Starting"
         android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true"
+        android:resizeableActivity="true"
         tools:targetApi="35">
 
         <activity
@@ -38,7 +45,34 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <service
+            android:name=".tile.NyxTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/quick_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".widget.QuickCaptureWidget"

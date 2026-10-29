@@ -52,7 +52,7 @@ fun NyxTopBar(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .background(palette.background)
+            .background(palette.surface.copy(alpha = 0.55f))
             .drawBehind {
                 drawLine(
                     color = palette.border,

@@ -11,6 +11,7 @@ import com.nyxpad.app.domain.model.NoteTemplate
 import com.nyxpad.app.domain.model.WritingMood
 import com.nyxpad.app.domain.repository.NoteRepository
 import com.nyxpad.app.ui.navigation.Screen
+import com.nyxpad.app.utils.PendingShare
 import com.nyxpad.app.utils.WordCountUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -41,6 +42,7 @@ data class EditorUiState(
     val moodTag: WritingMood = WritingMood.None,
     val wordCount: Int = 0,
     val charCount: Int = 0,
+    val tags: List<String> = emptyList(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val lastSavedAt: Long? = null,
@@ -58,9 +60,19 @@ class EditorViewModel @Inject constructor(
     private val noteIdArgument: Long =
         savedStateHandle.get<Long>(Screen.Editor.ARG_NOTE_ID) ?: 0L
 
+    private val sharedContent = if (noteIdArgument == 0L) {
+        PendingShare.consume()
+    } else {
+        null
+    }
+
     private val _state = MutableStateFlow(
         EditorUiState(
             noteId = noteIdArgument,
+            title = sharedContent?.first.orEmpty(),
+            content = sharedContent?.second.orEmpty(),
+            wordCount = WordCountUtils.countWords(sharedContent?.second.orEmpty()),
+            charCount = sharedContent?.second.orEmpty().length,
             isLoading = noteIdArgument != 0L,
         ),
     )
@@ -120,6 +132,7 @@ class EditorViewModel @Inject constructor(
                         moodTag = note.moodTag,
                         wordCount = note.wordCount,
                         charCount = note.charCount,
+                        tags = note.tags,
                         isLoading = false,
                         lastSavedAt = note.updatedAt,
                     )
@@ -168,6 +181,16 @@ class EditorViewModel @Inject constructor(
 
     fun setMood(mood: WritingMood) {
         _state.update { it.copy(moodTag = mood) }
+        persistMetadata()
+    }
+
+    fun setTags(tags: List<String>) {
+        val clean = tags
+            .map { it.replace(',', ' ').trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(12)
+        _state.update { it.copy(tags = clean) }
         persistMetadata()
     }
 
@@ -279,6 +302,7 @@ class EditorViewModel @Inject constructor(
                 moodTag = latest.moodTag,
                 wordCount = WordCountUtils.countWords(latest.content),
                 charCount = latest.content.length,
+                tags = latest.tags,
             )
             val savedId = repository.saveNote(note)
             if (latest.content.isNotBlank()) {

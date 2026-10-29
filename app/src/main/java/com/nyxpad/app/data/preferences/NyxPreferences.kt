@@ -74,6 +74,20 @@ enum class ViewMode(val storageKey: String) {
     }
 }
 
+enum class BackgroundStyle(val storageKey: String, val label: String) {
+    Aurora("aurora", "Aurora"),
+    Nebula("nebula", "Nebula"),
+    Ember("ember", "Ember"),
+    Ocean("ocean", "Ocean"),
+    Graphite("graphite", "Graphite"),
+    Custom("custom", "Your photo");
+
+    companion object {
+        fun fromKey(key: String?): BackgroundStyle =
+            entries.firstOrNull { it.storageKey == key } ?: Aurora
+    }
+}
+
 enum class SortOption(val storageKey: String, val label: String) {
     LastEdited("last_edited", "Last edited"),
     DateCreated("date_created", "Date created"),
@@ -100,6 +114,9 @@ data class NyxSettings(
     val autoPurgeDays: Int = PreferencesKeys.DEFAULT_PURGE_DAYS,
     val viewMode: ViewMode = ViewMode.Grid,
     val sortOption: SortOption = SortOption.LastEdited,
+    val backgroundStyle: BackgroundStyle = BackgroundStyle.Aurora,
+    val customBackgroundPath: String = "",
+    val onlineFeatures: Boolean = false,
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
     val streakHistory: List<Long> = emptyList(),
@@ -212,6 +229,45 @@ class NyxPreferences @Inject constructor(
         dataStore.edit { it[Keys.AutoPurgeDays] = safe }
     }
 
+    suspend fun setBackgroundStyle(style: BackgroundStyle) {
+        dataStore.edit { it[Keys.BackgroundStyle] = style.storageKey }
+    }
+
+    suspend fun setCustomBackgroundPath(path: String) {
+        dataStore.edit { it[Keys.CustomBackgroundPath] = path }
+    }
+
+    suspend fun setOnlineFeatures(enabled: Boolean) {
+        dataStore.edit { it[Keys.OnlineFeatures] = enabled }
+    }
+
+    suspend fun applySettings(settings: NyxSettings) {
+        dataStore.edit { prefs ->
+            prefs[Keys.Theme] = settings.theme.storageKey
+            prefs[Keys.Accent] = settings.accent.storageKey
+            prefs[Keys.FontSize] = settings.fontSize.coerceIn(
+                PreferencesKeys.MIN_FONT_SIZE,
+                PreferencesKeys.MAX_FONT_SIZE,
+            )
+            prefs[Keys.FontStyle] = settings.fontStyle.storageKey
+            prefs[Keys.AutoSave] = settings.autoSave
+            prefs[Keys.LineSpacing] = settings.lineSpacing.coerceIn(
+                PreferencesKeys.MIN_LINE_SPACING,
+                PreferencesKeys.MAX_LINE_SPACING,
+            )
+            prefs[Keys.ShowWordCount] = settings.showWordCount
+            prefs[Keys.FocusModeDefault] = settings.focusModeDefault
+            prefs[Keys.AppLock] = settings.appLock
+            prefs[Keys.NoteLock] = settings.noteLock
+            prefs[Keys.AutoPurgeDays] = settings.autoPurgeDays
+            prefs[Keys.ViewMode] = settings.viewMode.storageKey
+            prefs[Keys.SortOption] = settings.sortOption.storageKey
+            prefs[Keys.BackgroundStyle] = settings.backgroundStyle.storageKey
+            prefs[Keys.CustomBackgroundPath] = settings.customBackgroundPath
+            prefs[Keys.OnlineFeatures] = settings.onlineFeatures
+        }
+    }
+
     /**
      * Records one writing day. Calling this repeatedly on the same calendar day
      * is intentionally a no-op, so typing hundreds of words still advances the
@@ -276,6 +332,9 @@ class NyxPreferences @Inject constructor(
             autoPurgeDays = prefs[Keys.AutoPurgeDays] ?: PreferencesKeys.DEFAULT_PURGE_DAYS,
             viewMode = ViewMode.fromKey(prefs[Keys.ViewMode]),
             sortOption = SortOption.fromKey(prefs[Keys.SortOption]),
+            backgroundStyle = BackgroundStyle.fromKey(prefs[Keys.BackgroundStyle]),
+            customBackgroundPath = prefs[Keys.CustomBackgroundPath] ?: "",
+            onlineFeatures = prefs[Keys.OnlineFeatures] ?: false,
             currentStreak = activeStreak,
             longestStreak = prefs[Keys.LongestStreak] ?: 0,
             streakHistory = parseHistory(prefs[Keys.StreakHistory]),
@@ -305,6 +364,9 @@ class NyxPreferences @Inject constructor(
         val AppLock = booleanPreferencesKey(PreferencesKeys.APP_LOCK)
         val NoteLock = booleanPreferencesKey(PreferencesKeys.NOTE_LOCK)
         val AutoPurgeDays = intPreferencesKey(PreferencesKeys.AUTO_PURGE_DAYS)
+        val BackgroundStyle = stringPreferencesKey(PreferencesKeys.BACKGROUND_STYLE)
+        val CustomBackgroundPath = stringPreferencesKey(PreferencesKeys.CUSTOM_BACKGROUND_PATH)
+        val OnlineFeatures = booleanPreferencesKey(PreferencesKeys.ONLINE_FEATURES)
         val LastWriteDate = longPreferencesKey(PreferencesKeys.LAST_WRITE_DATE)
         val StreakCount = intPreferencesKey(PreferencesKeys.STREAK_COUNT)
         val LongestStreak = intPreferencesKey(PreferencesKeys.LONGEST_STREAK)

@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -25,8 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,6 +60,7 @@ fun NoteCard(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
+    onMore: (() -> Unit)? = null,
 ) {
     val palette = LocalNyxPalette.current
     val accent = LocalNyxAccent.current
@@ -95,6 +99,7 @@ fun NoteCard(
                 )
                 .clip(shape)
                 .background(cardColor)
+                .border(1.dp, palette.glassBorder, shape)
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
@@ -130,6 +135,19 @@ fun NoteCard(
                         modifier = Modifier.size(15.dp),
                     )
                 }
+                if (onMore != null) {
+                    IconButton(
+                        onClick = onMore,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.MoreVert,
+                            contentDescription = "Note actions",
+                            tint = palette.subtext,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
             }
             if (previewText.isNotBlank()) {
                 Spacer(Modifier.height(6.dp))
@@ -140,6 +158,20 @@ fun NoteCard(
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (note.tags.isNotEmpty()) {
+                Spacer(Modifier.height(7.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    note.tags.take(2).forEach { tag ->
+                        Text(
+                            text = "#$tag",
+                            style = NyxCaption,
+                            color = accent.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
             Spacer(Modifier.height(12.dp))
             Row(
@@ -182,6 +214,7 @@ fun NoteCard(
                 )
                 .clip(shape)
                 .background(cardColor)
+                .border(1.dp, palette.glassBorder, shape)
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
@@ -225,12 +258,35 @@ fun NoteCard(
                             modifier = Modifier.size(14.dp),
                         )
                     }
+                    if (onMore != null) {
+                        IconButton(
+                            onClick = onMore,
+                            modifier = Modifier.size(26.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoreVert,
+                                contentDescription = "Note actions",
+                                tint = palette.subtext,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
                 if (previewText.isNotBlank()) {
                     Text(
                         text = previewText,
                         style = NyxBodySmall,
                         color = palette.subtext,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                if (note.tags.isNotEmpty()) {
+                    Text(
+                        text = note.tags.take(3).joinToString("  ") { "#$it" },
+                        style = NyxCaption,
+                        color = accent.copy(alpha = 0.9f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp),

@@ -37,7 +37,7 @@ fun NyxScreenHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(palette.background)
+            .background(palette.surface.copy(alpha = 0.55f))
             .statusBarsPadding()
             .height(62.dp)
             .drawBehind {

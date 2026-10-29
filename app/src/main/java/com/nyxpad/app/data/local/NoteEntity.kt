@@ -28,4 +28,5 @@ data class NoteEntity(
     val moodTag: String = "none",
     val wordCount: Int = 0,
     val charCount: Int = 0,
+    val tags: String = "",
 )

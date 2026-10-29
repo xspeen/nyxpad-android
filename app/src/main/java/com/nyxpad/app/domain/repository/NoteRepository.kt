@@ -24,12 +24,22 @@ interface NoteRepository {
     suspend fun updateLockStatus(id: Long, isLocked: Boolean)
     suspend fun updateColorTag(id: Long, colorTag: String)
     suspend fun updateMoodTag(id: Long, moodTag: String)
+    suspend fun updateTags(id: Long, tags: List<String>)
+    suspend fun bulkPin(ids: List<Long>, isPinned: Boolean)
+    suspend fun bulkArchive(ids: List<Long>, isArchived: Boolean)
+    suspend fun bulkDelete(ids: List<Long>)
+    suspend fun bulkRestore(ids: List<Long>)
+    suspend fun bulkTag(ids: List<Long>, tags: List<String>)
     suspend fun getTotalNoteCount(): Int
     suspend fun getTotalWordCount(): Int
     suspend fun getAllNotesForExport(): List<Note>
+    suspend fun getAllNotesForBackup(): List<Note>
+    suspend fun saveNotes(notes: List<Note>)
     suspend fun clearAllNotes()
 
     fun getTemplates(): Flow<List<NoteTemplate>>
+    suspend fun getTemplatesSnapshot(): List<NoteTemplate>
     suspend fun saveTemplate(template: NoteTemplate): Long
+    suspend fun clearAllTemplates()
     suspend fun deleteTemplate(id: Long)
 }

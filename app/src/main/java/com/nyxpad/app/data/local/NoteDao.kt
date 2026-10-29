@@ -33,7 +33,8 @@ interface NoteDao {
 
     @Query(
         "SELECT * FROM notes WHERE (title LIKE '%' || :query || '%' OR " +
-            "content LIKE '%' || :query || '%') AND isDeleted = 0 AND isArchived = 0 " +
+            "content LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%') " +
+            "AND isDeleted = 0 AND isArchived = 0 " +
             "ORDER BY isPinned DESC, updatedAt DESC",
     )
     fun searchNotes(query: String): Flow<List<NoteEntity>>
@@ -46,6 +47,9 @@ interface NoteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: NoteEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotes(notes: List<NoteEntity>): List<Long>
 
     @Update
     suspend fun updateNote(note: NoteEntity)
@@ -77,6 +81,24 @@ interface NoteDao {
     @Query("UPDATE notes SET moodTag = :moodTag WHERE id = :id")
     suspend fun updateMoodTag(id: Long, moodTag: String)
 
+    @Query("UPDATE notes SET tags = :tags WHERE id = :id")
+    suspend fun updateTags(id: Long, tags: String)
+
+    @Query("UPDATE notes SET isPinned = :isPinned WHERE id IN (:ids)")
+    suspend fun updatePinStatusBulk(ids: List<Long>, isPinned: Boolean)
+
+    @Query("UPDATE notes SET isArchived = :isArchived WHERE id IN (:ids)")
+    suspend fun updateArchiveStatusBulk(ids: List<Long>, isArchived: Boolean)
+
+    @Query("UPDATE notes SET isDeleted = 1, deletedAt = :deletedAt WHERE id IN (:ids)")
+    suspend fun softDeleteNotesBulk(ids: List<Long>, deletedAt: Long)
+
+    @Query("UPDATE notes SET isDeleted = 0, deletedAt = null WHERE id IN (:ids)")
+    suspend fun restoreNotesBulk(ids: List<Long>)
+
+    @Query("UPDATE notes SET tags = :tags WHERE id IN (:ids)")
+    suspend fun updateTagsBulk(ids: List<Long>, tags: String)
+
     @Query("SELECT COUNT(*) FROM notes WHERE isDeleted = 0")
     suspend fun getTotalNoteCount(): Int
 
@@ -85,6 +107,9 @@ interface NoteDao {
 
     @Query("SELECT * FROM notes WHERE isDeleted = 0 ORDER BY createdAt ASC")
     suspend fun getAllNotesForExport(): List<NoteEntity>
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 ORDER BY createdAt ASC")
+    suspend fun getAllNotesForBackup(): List<NoteEntity>
 
     @Query("DELETE FROM notes")
     suspend fun clearAllNotes()

@@ -13,8 +13,8 @@ android {
         applicationId = "com.nyxpad.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -138,8 +138,13 @@ dependencies {
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // Markdown rendering
+    // Markdown rendering and checklists
     implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
+
+    // QR generation and scanning (fully offline)
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     testImplementation("junit:junit:4.13.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
