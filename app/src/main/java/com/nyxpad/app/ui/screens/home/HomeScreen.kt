@@ -132,6 +132,27 @@ fun HomeScreen(
         )
     }
 
+    fun openActions(note: Note) {
+        if (!note.isLocked) {
+            actionNote = note
+            return
+        }
+        val host = activity
+        if (host == null) {
+            Toast.makeText(context, "Unable to show a security prompt.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        BiometricUtils.authenticate(
+            activity = host,
+            title = "Unlock note",
+            subtitle = "Use your biometrics or device PIN",
+            onSuccess = { actionNote = note },
+            onError = { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
     fun toggleNoteLock(note: Note) {
         val host = activity
         if (host == null) {
@@ -277,7 +298,7 @@ fun HomeScreen(
                                     note = note,
                                     isGrid = true,
                                     onClick = { openNote(note) },
-                                    onLongPress = { actionNote = note },
+                                    onLongPress = { openActions(note) },
                                 )
                             }
                         } else {
@@ -293,7 +314,7 @@ fun HomeScreen(
                                         note = note,
                                         isGrid = true,
                                         onClick = { openNote(note) },
-                                        onLongPress = { actionNote = note },
+                                        onLongPress = { openActions(note) },
                                     )
                                 }
                                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -308,7 +329,7 @@ fun HomeScreen(
                                     note = note,
                                     isGrid = true,
                                     onClick = { openNote(note) },
-                                    onLongPress = { actionNote = note },
+                                    onLongPress = { openActions(note) },
                                 )
                             }
                         }
@@ -336,7 +357,7 @@ fun HomeScreen(
                                     note = note,
                                     isGrid = false,
                                     onClick = { openNote(note) },
-                                    onLongPress = { actionNote = note },
+                                    onLongPress = { openActions(note) },
                                 )
                             }
                         } else {
@@ -352,7 +373,7 @@ fun HomeScreen(
                                         note = note,
                                         isGrid = false,
                                         onClick = { openNote(note) },
-                                        onLongPress = { actionNote = note },
+                                        onLongPress = { openActions(note) },
                                     )
                                 }
                                 item {
@@ -367,7 +388,7 @@ fun HomeScreen(
                                     note = note,
                                     isGrid = false,
                                     onClick = { openNote(note) },
-                                    onLongPress = { actionNote = note },
+                                    onLongPress = { openActions(note) },
                                 )
                             }
                         }
@@ -554,7 +575,11 @@ private fun NoteActionsSheet(
     NyxBottomSheet(onDismissRequest = onDismiss) {
         SheetHeader(
             title = note.displayTitle,
-            subtitle = note.preview.take(90).ifBlank { "No additional text" },
+            subtitle = if (note.isLocked) {
+                "Locked note — unlock to read"
+            } else {
+                note.preview.take(90).ifBlank { "No additional text" }
+            },
         )
 
         Text(

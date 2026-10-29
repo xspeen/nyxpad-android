@@ -254,11 +254,16 @@ class EditorViewModel @Inject constructor(
     private suspend fun saveInternal() {
         val snapshot = _state.value
         if (snapshot.isLoading) return
-        if (snapshot.title.isBlank() && snapshot.content.isBlank()) return
+        // A brand-new note with no text has nothing to persist. An existing note
+        // must still be saved when its text is cleared, otherwise deleting all
+        // content would silently restore the old text on the next launch.
+        if (snapshot.noteId == 0L && snapshot.title.isBlank() && snapshot.content.isBlank()) return
 
         saveMutex.withLock {
             val latest = _state.value
-            if (latest.title.isBlank() && latest.content.isBlank()) return@withLock
+            if (latest.noteId == 0L && latest.title.isBlank() && latest.content.isBlank()) {
+                return@withLock
+            }
             _state.update { it.copy(isSaving = true) }
             val now = System.currentTimeMillis()
             val note = Note(

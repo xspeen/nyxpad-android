@@ -600,6 +600,7 @@ private fun EditorBody(
             value = state.title,
             onValueChange = onTitleChange,
             modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             textStyle = NyxDisplay.copy(
                 color = palette.text,
                 fontSize = if (focusMode) 30.sp else 27.sp,

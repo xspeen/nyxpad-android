@@ -86,7 +86,9 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onStop() {
-        viewModel.lockApp()
+        if (!isChangingConfigurations) {
+            viewModel.lockApp()
+        }
         super.onStop()
     }
 

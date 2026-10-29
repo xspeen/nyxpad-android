@@ -1,5 +1,6 @@
 package com.nyxpad.app.utils
 
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
@@ -13,12 +14,16 @@ import androidx.fragment.app.FragmentActivity
 object BiometricUtils {
     fun canAuthenticate(context: Context): Boolean {
         val manager = BiometricManager.from(context)
-        val authenticators = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-        } else {
-            BIOMETRIC_STRONG
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return manager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) ==
+                BiometricManager.BIOMETRIC_SUCCESS
         }
-        return manager.canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
+        // DEVICE_CREDENTIAL cannot be queried before API 30, so combine the
+        // biometric check with a keyguard check to support PIN-only devices.
+        val biometrics = manager.canAuthenticate(BIOMETRIC_STRONG) ==
+            BiometricManager.BIOMETRIC_SUCCESS
+        val keyguard = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        return biometrics || keyguard?.isDeviceSecure == true
     }
 
     fun authenticate(

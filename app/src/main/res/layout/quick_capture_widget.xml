@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
             android:text="@string/app_name"
-            android:textColor="#E8E8F0"
+            android:textColor="@color/nyx_text"
             android:textSize="12sp" />
 
         <TextView
@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
             android:text="@string/widget_prompt"
-            android:textColor="#7A7A9A"
+            android:textColor="@color/nyx_subtext"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -47,5 +47,5 @@
         android:layout_height="20dp"
         android:contentDescription="@string/widget_description"
         android:src="@android:drawable/ic_input_add"
-        android:tint="#9D6FFF" />
+        android:tint="@color/nyx_accent" />
 </LinearLayout>

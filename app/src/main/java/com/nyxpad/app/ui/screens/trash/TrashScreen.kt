@@ -214,9 +214,14 @@ private fun TrashNoteCard(
                     color = accent.copy(alpha = 0.8f),
                 )
             }
-            if (note.preview.isNotBlank()) {
+            val previewText = if (note.isLocked) {
+                "Locked note — unlock to read"
+            } else {
+                note.preview
+            }
+            if (previewText.isNotBlank()) {
                 Text(
-                    text = note.preview,
+                    text = previewText,
                     style = NyxBodySmall,
                     color = palette.subtext,
                     maxLines = 2,

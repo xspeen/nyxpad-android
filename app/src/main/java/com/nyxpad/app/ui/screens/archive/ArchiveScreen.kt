@@ -1,5 +1,6 @@
 package com.nyxpad.app.ui.screens.archive
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,9 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +46,9 @@ import com.nyxpad.app.ui.theme.NyxBody
 import com.nyxpad.app.ui.theme.NyxBodySmall
 import com.nyxpad.app.ui.theme.NyxCaption
 import com.nyxpad.app.ui.theme.NyxTitle
+import com.nyxpad.app.utils.BiometricUtils
 import com.nyxpad.app.utils.DateUtils
+import com.nyxpad.app.utils.findFragmentActivity
 
 @Composable
 fun ArchiveScreen(
@@ -53,6 +58,29 @@ fun ArchiveScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val palette = LocalNyxPalette.current
+    val context = LocalContext.current
+    val activity = remember(context) { context.findFragmentActivity() }
+
+    fun openNote(note: Note) {
+        if (!note.isLocked) {
+            onOpenNote(note.id)
+            return
+        }
+        val host = activity
+        if (host == null) {
+            Toast.makeText(context, "Unable to show a security prompt.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        BiometricUtils.authenticate(
+            activity = host,
+            title = "Unlock note",
+            subtitle = "Use your biometrics or device PIN",
+            onSuccess = { onOpenNote(note.id) },
+            onError = { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -94,7 +122,7 @@ fun ArchiveScreen(
                     items(state.notes, key = { it.id }) { note ->
                         ArchiveNoteCard(
                             note = note,
-                            onOpen = { onOpenNote(note.id) },
+                            onOpen = { openNote(note) },
                             onUnarchive = { viewModel.unarchive(note) },
                             onDelete = { viewModel.moveToTrash(note) },
                         )
@@ -135,9 +163,14 @@ private fun ArchiveNoteCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (note.preview.isNotBlank()) {
+            val previewText = if (note.isLocked) {
+                "Locked note — unlock to read"
+            } else {
+                note.preview
+            }
+            if (previewText.isNotBlank()) {
                 Text(
-                    text = note.preview,
+                    text = previewText,
                     style = NyxBodySmall,
                     color = palette.subtext,
                     maxLines = 2,

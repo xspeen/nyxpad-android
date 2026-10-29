@@ -46,12 +46,18 @@ fun NyxPadRoot(
             if (!newNoteRequest || currentRoute == null) return@LaunchedEffect
             when (currentRoute) {
                 Screen.Onboarding.route -> Unit
-                Screen.Editor.route -> onNewNoteConsumed()
+                // Keep the note already open in the back stack so its unsaved
+                // text is not lost, and push a fresh editor on top.
+                Screen.Editor.route -> {
+                    onNewNoteConsumed()
+                    navController.navigate(Screen.Editor.createRoute())
+                }
+
                 else -> {
+                    onNewNoteConsumed()
                     navController.navigate(Screen.Editor.createRoute()) {
                         launchSingleTop = true
                     }
-                    onNewNoteConsumed()
                 }
             }
         }

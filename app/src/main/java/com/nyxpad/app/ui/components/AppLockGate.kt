@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.nyxpad.app.R
 import com.nyxpad.app.ui.theme.LocalNyxAccent
 import com.nyxpad.app.ui.theme.LocalNyxPalette
-import com.nyxpad.app.ui.theme.NyxBackground
 import com.nyxpad.app.ui.theme.NyxBody
 import com.nyxpad.app.ui.theme.NyxBodySmall
 import com.nyxpad.app.ui.theme.NyxCaption
@@ -76,7 +75,7 @@ fun AppLockGate(onUnlocked: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(NyxBackground)
+            .background(palette.background)
             .padding(horizontal = 32.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -141,7 +140,7 @@ fun AppLockGate(onUnlocked: () -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accent,
-                    contentColor = NyxBackground,
+                    contentColor = palette.background,
                 ),
             ) {
                 Text(

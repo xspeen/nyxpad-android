@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -75,6 +76,7 @@ fun NoteCard(
     } else {
         tagColor(note.colorTag)
     }
+    val previewText = if (note.isLocked) "Locked note — unlock to read" else note.preview
 
     if (isGrid) {
         Column(
@@ -119,11 +121,20 @@ fun NoteCard(
                         modifier = Modifier.size(15.dp),
                     )
                 }
+                if (note.isLocked) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = "Locked",
+                        tint = palette.subtext,
+                        modifier = Modifier.size(15.dp),
+                    )
+                }
             }
-            if (note.preview.isNotBlank()) {
+            if (previewText.isNotBlank()) {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = note.preview,
+                    text = previewText,
                     style = NyxBodySmall,
                     color = palette.subtext,
                     maxLines = 4,
@@ -206,10 +217,18 @@ fun NoteCard(
                             modifier = Modifier.size(14.dp),
                         )
                     }
+                    if (note.isLocked) {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = "Locked",
+                            tint = palette.subtext,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
                 }
-                if (note.preview.isNotBlank()) {
+                if (previewText.isNotBlank()) {
                     Text(
-                        text = note.preview,
+                        text = previewText,
                         style = NyxBodySmall,
                         color = palette.subtext,
                         maxLines = 1,
