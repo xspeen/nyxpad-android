@@ -276,6 +276,8 @@ fun HomeScreen(
         if (selectionMode) exitSelection() else viewModel.closeSearch()
     }
 
+    val selectableNotes = if (pinnedOnly) state.pinnedNotes else state.notes
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -289,13 +291,14 @@ fun HomeScreen(
             if (selectionMode) {
                 SelectionTopBar(
                     count = selectedIds.size,
-                    allSelected = selectedIds.size == state.notes.size && state.notes.isNotEmpty(),
+                    allSelected = selectedIds.size == selectableNotes.size &&
+                        selectableNotes.isNotEmpty(),
                     onClose = ::exitSelection,
                     onSelectAll = {
-                        if (selectedIds.size == state.notes.size) {
+                        if (selectedIds.size == selectableNotes.size) {
                             exitSelection()
                         } else {
-                            selectedIds = state.notes.map { it.id }.toSet()
+                            selectedIds = selectableNotes.map { it.id }.toSet()
                         }
                     },
                     onPin = {
