@@ -6,6 +6,15 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- NyxPad never touches the network and never runs foreground work.
+         WorkManager merges these in; strip them from the final APK. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+
     <application
         android:name=".NyxPadApp"
         android:allowBackup="false"
