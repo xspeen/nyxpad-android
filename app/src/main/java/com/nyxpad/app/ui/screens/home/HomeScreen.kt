@@ -292,10 +292,10 @@ fun HomeScreen(
                     allSelected = selectedIds.size == state.notes.size && state.notes.isNotEmpty(),
                     onClose = ::exitSelection,
                     onSelectAll = {
-                        selectedIds = if (selectedIds.size == state.notes.size) {
-                            emptySet()
+                        if (selectedIds.size == state.notes.size) {
+                            exitSelection()
                         } else {
-                            state.notes.map { it.id }.toSet()
+                            selectedIds = state.notes.map { it.id }.toSet()
                         }
                     },
                     onPin = {

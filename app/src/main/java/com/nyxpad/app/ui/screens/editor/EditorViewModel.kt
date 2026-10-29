@@ -280,11 +280,18 @@ class EditorViewModel @Inject constructor(
         // A brand-new note with no text has nothing to persist. An existing note
         // must still be saved when its text is cleared, otherwise deleting all
         // content would silently restore the old text on the next launch.
-        if (snapshot.noteId == 0L && snapshot.title.isBlank() && snapshot.content.isBlank()) return
+        // Metadata (tags, colour, mood, pin, lock) is worth persisting on its own.
+        if (snapshot.noteId == 0L && snapshot.title.isBlank() &&
+            snapshot.content.isBlank() && !snapshot.hasMetadata()
+        ) {
+            return
+        }
 
         saveMutex.withLock {
             val latest = _state.value
-            if (latest.noteId == 0L && latest.title.isBlank() && latest.content.isBlank()) {
+            if (latest.noteId == 0L && latest.title.isBlank() &&
+                latest.content.isBlank() && !latest.hasMetadata()
+            ) {
                 return@withLock
             }
             _state.update { it.copy(isSaving = true) }
@@ -320,4 +327,10 @@ class EditorViewModel @Inject constructor(
             }
         }
     }
+
+    private fun EditorUiState.hasMetadata(): Boolean =
+        isPinned || isArchived || isLocked ||
+            colorTag != NoteColorTag.Default ||
+            moodTag != WritingMood.None ||
+            tags.isNotEmpty()
 }

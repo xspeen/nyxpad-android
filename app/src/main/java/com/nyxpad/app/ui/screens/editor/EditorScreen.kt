@@ -220,8 +220,12 @@ fun EditorScreen(
         val start = value.selection.start.coerceIn(0, value.text.length)
         val end = value.selection.end.coerceIn(0, value.text.length)
         val updated = if (linePrefix) {
-            val lineStart = value.text.lastIndexOf('\n', (start - 1).coerceAtLeast(0))
-                .let { if (it == -1) 0 else it + 1 }
+            val lineStart = if (start == 0) {
+                0
+            } else {
+                val newline = value.text.lastIndexOf('\n', start - 1)
+                if (newline == -1) 0 else newline + 1
+            }
             val newText = value.text.substring(0, lineStart) +
                 prefix +
                 value.text.substring(lineStart)
