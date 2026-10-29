@@ -1,8 +1,11 @@
 package com.nyxpad.app.ui.screens.settings
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nyxpad.app.data.backup.BackupManager
 import com.nyxpad.app.data.preferences.AccentChoice
+import com.nyxpad.app.data.preferences.BackgroundStyle
 import com.nyxpad.app.data.preferences.NyxFontStyle
 import com.nyxpad.app.data.preferences.NyxPreferences
 import com.nyxpad.app.data.preferences.NyxSettings
@@ -20,6 +23,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel @Inject constructor(
     private val preferences: NyxPreferences,
     private val repository: NoteRepository,
+    private val backupManager: BackupManager,
 ) : ViewModel() {
 
     val settings: StateFlow<NyxSettings> = preferences.settingsFlow.stateIn(
@@ -71,6 +75,29 @@ class SettingsViewModel @Inject constructor(
     fun setAutoPurgeDays(days: Int) {
         viewModelScope.launch { preferences.setAutoPurgeDays(days) }
     }
+
+    fun setBackgroundStyle(style: BackgroundStyle) {
+        viewModelScope.launch { preferences.setBackgroundStyle(style) }
+    }
+
+    fun setCustomBackgroundPath(path: String) {
+        viewModelScope.launch { preferences.setCustomBackgroundPath(path) }
+    }
+
+    fun setOnlineFeatures(enabled: Boolean) {
+        viewModelScope.launch { preferences.setOnlineFeatures(enabled) }
+    }
+
+    suspend fun exportBackup(uri: Uri): Result<Int> = backupManager.exportTo(uri)
+
+    suspend fun restoreBackup(uri: Uri, replace: Boolean): Result<Int> =
+        backupManager.restoreFrom(uri, replace)
+
+    suspend fun importTextFiles(uris: List<Uri>): Result<Int> =
+        backupManager.importTextFiles(uris)
+
+    suspend fun exportMarkdown(uri: Uri): Result<Int> =
+        backupManager.exportMarkdownTo(uri)
 
     suspend fun allNotesForExport(): List<Note> = repository.getAllNotesForExport()
 

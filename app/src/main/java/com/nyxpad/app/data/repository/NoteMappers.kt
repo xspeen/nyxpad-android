@@ -22,6 +22,10 @@ fun NoteEntity.toDomain(): Note = Note(
     moodTag = WritingMood.fromWireValue(moodTag),
     wordCount = wordCount,
     charCount = charCount,
+    tags = tags.split(',')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct(),
 )
 
 fun Note.toEntity(): NoteEntity = NoteEntity(
@@ -39,6 +43,7 @@ fun Note.toEntity(): NoteEntity = NoteEntity(
     moodTag = moodTag.wireValue,
     wordCount = wordCount,
     charCount = charCount,
+    tags = tags.joinToString(","),
 )
 
 fun TemplateEntity.toDomain(): NoteTemplate = NoteTemplate(

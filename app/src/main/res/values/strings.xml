@@ -4,4 +4,11 @@
     <string name="app_tagline">Write without limits</string>
     <string name="widget_description">Open a new NyxPad note instantly.</string>
     <string name="widget_prompt">Write something…</string>
+    <string name="quick_tile_label">New NyxPad note</string>
+    <string name="shortcut_new_note_short">New note</string>
+    <string name="shortcut_new_note_long">Write a new NyxPad note</string>
+    <string name="shortcut_new_note_disabled">NyxPad shortcuts are unavailable</string>
+    <string name="shortcut_scan_short">Scan QR note</string>
+    <string name="shortcut_scan_long">Scan a note shared by QR code</string>
+    <string name="shortcut_scan_disabled">NyxPad shortcuts are unavailable</string>
 </resources>

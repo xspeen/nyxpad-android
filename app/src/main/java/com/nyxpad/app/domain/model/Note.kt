@@ -20,9 +20,13 @@ data class Note(
     val moodTag: WritingMood = WritingMood.None,
     val wordCount: Int = 0,
     val charCount: Int = 0,
+    val tags: List<String> = emptyList(),
 ) {
     val displayTitle: String
         get() = title.ifBlank { "Untitled note" }
+
+    val tagsLabel: String
+        get() = tags.joinToString(", ")
 
     val preview: String
         get() = content.lineSequence()

@@ -31,6 +31,25 @@ val NyxPureAmoled = Color(0xFF000000)
 val NyxMidnight = Color(0xFF050A14)
 
 // Note color tags.
+val NyxGlassSurface = Color(0x1AFFFFFF)
+val NyxGlassSurfaceStrong = Color(0x2EFFFFFF)
+val NyxGlassBorder = Color(0x38FFFFFF)
+val NyxGlassHighlight = Color(0x1FFFFFFF)
+val NyxGlassScrim = Color(0xB3050508)
+val NyxGlassDivider = Color(0x1FFFFFFF)
+val NyxGlassAmoledScrim = Color(0xE6000000)
+val NyxGlassMidnightScrim = Color(0xD9050A14)
+
+// Backdrop presets.
+val NyxNebulaGlow = Color(0xFFB45CFF)
+val NyxNebulaDeep = Color(0xFF4A2E8A)
+val NyxEmberGlow = Color(0xFFFF8A4C)
+val NyxEmberDeep = Color(0xFF7A2E2E)
+val NyxOceanGlow = Color(0xFF26C6A6)
+val NyxOceanDeep = Color(0xFF1E5A8A)
+val NyxGraphiteGlow = Color(0xFF5A5A6E)
+val NyxGraphiteDeep = Color(0xFF242432)
+
 val NyxTagDefault = Color(0xFF13131C)
 val NyxTagPurple = Color(0xFF1E1530)
 val NyxTagBlue = Color(0xFF0F1E2E)

@@ -29,44 +29,48 @@ data class NyxPalette(
     val glow: Color,
     val glowBlue: Color,
     val tagDefault: Color,
+    val glassBorder: Color,
+    val glassHighlight: Color,
 )
 
 private val LuminaPalette = NyxPalette(
     background = NyxBackground,
-    surface = NyxSurface,
-    surfaceVariant = NyxSurfaceVariant,
-    card = NyxCard,
-    cardPressed = NyxCardPressed,
-    border = NyxBorder,
-    divider = NyxDivider,
+    surface = NyxGlassScrim,
+    surfaceVariant = NyxGlassSurface,
+    card = NyxGlassSurface,
+    cardPressed = NyxGlassSurfaceStrong,
+    border = NyxGlassBorder,
+    divider = NyxGlassDivider,
     text = NyxText,
     subtext = NyxSubtext,
     placeholder = NyxPlaceholder,
     glow = NyxGlow,
     glowBlue = NyxGlowBlue,
-    tagDefault = NyxTagDefault,
+    tagDefault = NyxGlassSurface,
+    glassBorder = NyxGlassBorder,
+    glassHighlight = NyxGlassHighlight,
 )
 
 private val AmoledPalette = LuminaPalette.copy(
     background = AmoledBackground,
-    surface = AmoledSurface,
-    surfaceVariant = AmoledSurfaceVariant,
-    card = AmoledCard,
-    cardPressed = AmoledCardPressed,
-    border = AmoledBorder,
-    divider = AmoledDivider,
-    tagDefault = AmoledCard,
+    surface = NyxGlassAmoledScrim,
+    surfaceVariant = NyxGlassSurface,
+    card = NyxGlassSurface,
+    cardPressed = NyxGlassSurfaceStrong,
+    border = NyxGlassBorder,
+    divider = NyxGlassDivider,
+    tagDefault = NyxGlassSurface,
 )
 
 private val MidnightPalette = LuminaPalette.copy(
     background = MidnightBackground,
-    surface = MidnightSurface,
-    surfaceVariant = MidnightSurfaceVariant,
-    card = MidnightCard,
-    cardPressed = MidnightCardPressed,
-    border = MidnightBorder,
-    divider = MidnightDivider,
-    tagDefault = MidnightCard,
+    surface = NyxGlassMidnightScrim,
+    surfaceVariant = NyxGlassSurface,
+    card = NyxGlassSurface,
+    cardPressed = NyxGlassSurfaceStrong,
+    border = NyxGlassBorder,
+    divider = NyxGlassDivider,
+    tagDefault = NyxGlassSurface,
 )
 
 val LocalNyxPalette = staticCompositionLocalOf { LuminaPalette }
@@ -99,6 +103,16 @@ fun NyxPadTheme(
     val text by animateColorAsState(base.text, tween(duration), label = "text")
     val subtext by animateColorAsState(base.subtext, tween(duration), label = "subtext")
     val placeholder by animateColorAsState(base.placeholder, tween(duration), label = "placeholder")
+    val glassBorder by animateColorAsState(
+        base.glassBorder,
+        tween(duration),
+        label = "glassBorder",
+    )
+    val glassHighlight by animateColorAsState(
+        base.glassHighlight,
+        tween(duration),
+        label = "glassHighlight",
+    )
     val accent by animateColorAsState(accentFor(settings.accent), tween(duration), label = "accent")
     val palette = base.copy(
         background = background,
@@ -111,6 +125,8 @@ fun NyxPadTheme(
         text = text,
         subtext = subtext,
         placeholder = placeholder,
+        glassBorder = glassBorder,
+        glassHighlight = glassHighlight,
     )
     val colorScheme = darkColorScheme(
         primary = accent,

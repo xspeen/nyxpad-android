@@ -36,6 +36,8 @@ data class HomeUiState(
     val searchActive: Boolean = false,
     val refreshing: Boolean = false,
     val isLoading: Boolean = true,
+    val allTags: List<String> = emptyList(),
+    val selectedTag: String? = null,
 )
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -48,6 +50,7 @@ class HomeViewModel @Inject constructor(
     private val query = MutableStateFlow("")
     private val searchActive = MutableStateFlow(false)
     private val refreshing = MutableStateFlow(false)
+    private val selectedTag = MutableStateFlow<String?>(null)
 
     private val notesFlow: Flow<List<Note>> = query
         .debounce(120)
@@ -60,7 +63,7 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-    val uiState: StateFlow<HomeUiState> = combine(
+    private val baseState: Flow<HomeUiState> = combine(
         notesFlow,
         preferences.settingsFlow,
         query,
@@ -76,6 +79,23 @@ class HomeViewModel @Inject constructor(
             searchActive = isSearching,
             refreshing = isRefreshing,
             isLoading = false,
+            allTags = sorted.flatMap { it.tags }.distinct().sorted(),
+        )
+    }
+
+    val uiState: StateFlow<HomeUiState> = combine(
+        baseState,
+        selectedTag,
+    ) { state, tag ->
+        val filtered = if (tag == null) {
+            state.notes
+        } else {
+            state.notes.filter { note -> note.tags.any { it.equals(tag, ignoreCase = true) } }
+        }
+        state.copy(
+            notes = filtered,
+            pinnedNotes = filtered.filter { it.isPinned },
+            selectedTag = tag,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -101,6 +121,10 @@ class HomeViewModel @Inject constructor(
 
     fun setQuery(value: String) {
         query.value = value
+    }
+
+    fun setSelectedTag(tag: String?) {
+        selectedTag.value = tag
     }
 
     fun setViewMode(mode: ViewMode) {
@@ -157,6 +181,48 @@ class HomeViewModel @Inject constructor(
     fun setLocked(note: Note, locked: Boolean) {
         viewModelScope.launch {
             repository.updateLockStatus(note.id, locked)
+        }
+    }
+
+    fun bulkPin(ids: List<Long>, pinned: Boolean) {
+        viewModelScope.launch { repository.bulkPin(ids, pinned) }
+    }
+
+    fun bulkArchive(ids: List<Long>) {
+        viewModelScope.launch { repository.bulkArchive(ids, true) }
+    }
+
+    fun bulkDelete(ids: List<Long>) {
+        viewModelScope.launch { repository.bulkDelete(ids) }
+    }
+
+    fun bulkRestore(ids: List<Long>) {
+        viewModelScope.launch { repository.bulkRestore(ids) }
+    }
+
+    fun bulkTag(ids: List<Long>, tags: List<String>) {
+        viewModelScope.launch { repository.bulkTag(ids, tags) }
+    }
+
+    fun restoreNotes(ids: List<Long>) {
+        viewModelScope.launch { repository.bulkRestore(ids) }
+    }
+
+    fun createNoteFromText(title: String?, text: String, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val id = repository.saveNote(
+                Note(
+                    title = title.orEmpty(),
+                    content = text,
+                    createdAt = now,
+                    updatedAt = now,
+                    wordCount = WordCountUtils.countWords(text),
+                    charCount = text.length,
+                    tags = listOf("shared"),
+                ),
+            )
+            onCreated(id)
         }
     }
 

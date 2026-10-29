@@ -2,6 +2,7 @@ package com.nyxpad.app.ui.screens.home
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,16 +33,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,12 +93,16 @@ import com.nyxpad.app.ui.theme.LocalNyxPalette
 import com.nyxpad.app.ui.theme.NyxBody
 import com.nyxpad.app.ui.theme.NyxBodySmall
 import com.nyxpad.app.ui.theme.NyxCaption
+import com.nyxpad.app.ui.theme.NyxError
 import com.nyxpad.app.ui.theme.NyxLabel
 import com.nyxpad.app.ui.theme.moodColor
 import com.nyxpad.app.ui.theme.tagColor
 import com.nyxpad.app.utils.BiometricUtils
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.nyxpad.app.utils.ClipboardUtils
 import com.nyxpad.app.utils.ExportUtils
+import com.nyxpad.app.utils.QrCodeUtils
 import com.nyxpad.app.utils.findFragmentActivity
 import kotlinx.coroutines.launch
 
@@ -95,6 +112,8 @@ fun HomeScreen(
     onOpenNote: (Long) -> Unit,
     onNewNote: () -> Unit,
     onNavigate: (String) -> Unit,
+    scanQrRequest: Boolean = false,
+    onScanQrConsumed: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -108,8 +127,70 @@ fun HomeScreen(
     var actionNote by remember { mutableStateOf<Note?>(null) }
     var showTemplates by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showBulkTagDialog by remember { mutableStateOf(false) }
+    var bulkTagText by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val activity = remember(context) { context.findFragmentActivity() }
+
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val contents = result.contents
+        if (!contents.isNullOrBlank()) {
+            val payload = QrCodeUtils.decode(contents)
+            viewModel.createNoteFromText(payload.first, payload.second) { id ->
+                onOpenNote(id)
+            }
+        }
+    }
+
+    fun launchScanner() {
+        scanLauncher.launch(
+            ScanOptions().apply {
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                setPrompt("Scan a NyxPad note")
+                setBeepEnabled(false)
+                setOrientationLocked(false)
+            },
+        )
+    }
+
+    LaunchedEffect(scanQrRequest) {
+        if (scanQrRequest) {
+            onScanQrConsumed()
+            launchScanner()
+        }
+    }
+
+    fun exitSelection() {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
+    fun toggleSelection(note: Note) {
+        selectedIds = if (note.id in selectedIds) {
+            selectedIds - note.id
+        } else {
+            selectedIds + note.id
+        }
+        if (selectedIds.isEmpty()) selectionMode = false
+    }
+
+    fun deleteWithUndo(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        viewModel.bulkDelete(ids)
+        exitSelection()
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = if (ids.size == 1) "Moved to trash" else "Moved ${ids.size} notes to trash",
+                actionLabel = "Undo",
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreNotes(ids)
+            }
+        }
+    }
 
     fun openNote(note: Note) {
         if (!note.isLocked) {
@@ -153,6 +234,19 @@ fun HomeScreen(
         )
     }
 
+    fun handleNoteClick(note: Note) {
+        if (selectionMode) toggleSelection(note) else openNote(note)
+    }
+
+    fun handleNoteLongPress(note: Note) {
+        if (selectionMode) {
+            toggleSelection(note)
+        } else {
+            selectionMode = true
+            selectedIds = setOf(note.id)
+        }
+    }
+
     fun toggleNoteLock(note: Note) {
         val host = activity
         if (host == null) {
@@ -178,21 +272,50 @@ fun HomeScreen(
         )
     }
 
-    BackHandler(enabled = state.searchActive) {
-        viewModel.closeSearch()
+    BackHandler(enabled = selectionMode || state.searchActive) {
+        if (selectionMode) exitSelection() else viewModel.closeSearch()
     }
+
+    val selectableNotes = if (pinnedOnly) state.pinnedNotes else state.notes
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background),
+            .background(Color.Transparent),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding(),
         ) {
-            if (state.searchActive) {
+            if (selectionMode) {
+                SelectionTopBar(
+                    count = selectedIds.size,
+                    allSelected = selectedIds.size == selectableNotes.size &&
+                        selectableNotes.isNotEmpty(),
+                    onClose = ::exitSelection,
+                    onSelectAll = {
+                        if (selectedIds.size == selectableNotes.size) {
+                            exitSelection()
+                        } else {
+                            selectedIds = selectableNotes.map { it.id }.toSet()
+                        }
+                    },
+                    onPin = {
+                        viewModel.bulkPin(selectedIds.toList(), true)
+                        exitSelection()
+                    },
+                    onArchive = {
+                        viewModel.bulkArchive(selectedIds.toList())
+                        exitSelection()
+                    },
+                    onTag = {
+                        bulkTagText = ""
+                        showBulkTagDialog = true
+                    },
+                    onDelete = { deleteWithUndo(selectedIds.toList()) },
+                )
+            } else if (state.searchActive) {
                 NyxSearchBar(
                     query = state.query,
                     onQueryChange = viewModel::setQuery,
@@ -216,6 +339,33 @@ fun HomeScreen(
                     },
                     onSortClick = { showSort = true },
                 )
+            }
+
+            if (!selectionMode && !state.searchActive && state.allTags.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TagFilterChip(
+                        label = "All",
+                        selected = state.selectedTag == null,
+                        onClick = { viewModel.setSelectedTag(null) },
+                    )
+                    state.allTags.forEach { tag ->
+                        TagFilterChip(
+                            label = "#$tag",
+                            selected = state.selectedTag == tag,
+                            onClick = {
+                                viewModel.setSelectedTag(
+                                    if (state.selectedTag == tag) null else tag,
+                                )
+                            },
+                        )
+                    }
+                }
             }
 
             PullRefreshLayout(
@@ -242,7 +392,7 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = 72.dp),
+                            .padding(bottom = 148.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         val title = when {
@@ -275,13 +425,13 @@ fun HomeScreen(
                     }
                 } else if (state.settings.viewMode == ViewMode.Grid) {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(minSize = 168.dp),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
                             top = 4.dp,
-                            bottom = 124.dp,
+                            bottom = 196.dp,
                         ),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -297,8 +447,9 @@ fun HomeScreen(
                                 NoteCard(
                                     note = note,
                                     isGrid = true,
-                                    onClick = { openNote(note) },
-                                    onLongPress = { openActions(note) },
+                                    onClick = { handleNoteClick(note) },
+                                    onLongPress = { handleNoteLongPress(note) },
+                                    onMore = { openActions(note) },
                                 )
                             }
                         } else {
@@ -313,8 +464,9 @@ fun HomeScreen(
                                     NoteCard(
                                         note = note,
                                         isGrid = true,
-                                        onClick = { openNote(note) },
-                                        onLongPress = { openActions(note) },
+                                        onClick = { handleNoteClick(note) },
+                                        onLongPress = { handleNoteLongPress(note) },
+                                        onMore = { openActions(note) },
                                     )
                                 }
                                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -328,8 +480,9 @@ fun HomeScreen(
                                 NoteCard(
                                     note = note,
                                     isGrid = true,
-                                    onClick = { openNote(note) },
-                                    onLongPress = { openActions(note) },
+                                    onClick = { handleNoteClick(note) },
+                                    onLongPress = { handleNoteLongPress(note) },
+                                    onMore = { openActions(note) },
                                 )
                             }
                         }
@@ -341,7 +494,7 @@ fun HomeScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 4.dp,
-                            bottom = 124.dp,
+                            bottom = 196.dp,
                         ),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -356,8 +509,9 @@ fun HomeScreen(
                                 NoteCard(
                                     note = note,
                                     isGrid = false,
-                                    onClick = { openNote(note) },
-                                    onLongPress = { openActions(note) },
+                                    onClick = { handleNoteClick(note) },
+                                    onLongPress = { handleNoteLongPress(note) },
+                                    onMore = { openActions(note) },
                                 )
                             }
                         } else {
@@ -372,8 +526,9 @@ fun HomeScreen(
                                     NoteCard(
                                         note = note,
                                         isGrid = false,
-                                        onClick = { openNote(note) },
-                                        onLongPress = { openActions(note) },
+                                        onClick = { handleNoteClick(note) },
+                                        onLongPress = { handleNoteLongPress(note) },
+                                        onMore = { openActions(note) },
                                     )
                                 }
                                 item {
@@ -387,8 +542,9 @@ fun HomeScreen(
                                 NoteCard(
                                     note = note,
                                     isGrid = false,
-                                    onClick = { openNote(note) },
-                                    onLongPress = { openActions(note) },
+                                    onClick = { handleNoteClick(note) },
+                                    onLongPress = { handleNoteLongPress(note) },
+                                    onMore = { openActions(note) },
                                 )
                             }
                         }
@@ -403,7 +559,13 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 20.dp, bottom = 22.dp),
+                .padding(end = 20.dp, bottom = 96.dp),
+        )
+
+        HomeBottomNav(
+            currentRoute = if (pinnedOnly) Screen.Pinned.route else Screen.Home.route,
+            onNavigate = onNavigate,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
 
         NyxDrawer(
@@ -412,6 +574,15 @@ fun HomeScreen(
             onOpen = { drawerOpen = true },
             onClose = { drawerOpen = false },
             onNavigate = onNavigate,
+            onScanQr = ::launchScanner,
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 160.dp),
         )
     }
 
@@ -453,9 +624,8 @@ fun HomeScreen(
             },
             onToggleLock = { toggleNoteLock(note) },
             onDelete = {
-                viewModel.moveToTrash(note)
                 actionNote = null
-                Toast.makeText(context, "Moved to trash", Toast.LENGTH_SHORT).show()
+                deleteWithUndo(listOf(note.id))
             },
             onColorSelected = { tag ->
                 viewModel.setColor(note, tag)
@@ -515,6 +685,51 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(8.dp))
         }
+    }
+
+    if (showBulkTagDialog) {
+        AlertDialog(
+            onDismissRequest = { showBulkTagDialog = false },
+            title = { Text("Add tags", color = palette.text) },
+            text = {
+                Column {
+                    Text(
+                        text = "Separate tags with commas. This replaces the tags on " +
+                            "${selectedIds.size} selected notes.",
+                        style = NyxBodySmall,
+                        color = palette.subtext,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = bulkTagText,
+                        onValueChange = { bulkTagText = it },
+                        singleLine = true,
+                        label = { Text("Tags") },
+                        placeholder = { Text("idea, work, reading") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val tags = bulkTagText.split(',')
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                        viewModel.bulkTag(selectedIds.toList(), tags)
+                        showBulkTagDialog = false
+                        exitSelection()
+                    },
+                ) {
+                    Text("Apply", color = accent)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkTagDialog = false }) {
+                    Text("Cancel", color = palette.subtext)
+                }
+            },
+        )
     }
 
     if (showSort) {
@@ -726,6 +941,177 @@ private fun ActionRow(
             text = label,
             style = NyxBody,
             color = tint ?: palette.text,
+        )
+    }
+}
+
+@Composable
+private fun SelectionTopBar(
+    count: Int,
+    allSelected: Boolean,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onPin: () -> Unit,
+    onArchive: () -> Unit,
+    onTag: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val palette = LocalNyxPalette.current
+    val accent = LocalNyxAccent.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .background(palette.surface.copy(alpha = 0.72f))
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.Close,
+                contentDescription = "Exit selection",
+                tint = palette.text,
+                modifier = Modifier.size(21.dp),
+            )
+        }
+        Text(
+            text = "$count selected",
+            style = NyxBody,
+            color = accent,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.SelectAll,
+                contentDescription = if (allSelected) "Clear selection" else "Select all",
+                tint = if (allSelected) accent else palette.subtext,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onPin, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.PushPin,
+                contentDescription = "Pin selected",
+                tint = palette.subtext,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onTag, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.Label,
+                contentDescription = "Tag selected",
+                tint = palette.subtext,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onArchive, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.Archive,
+                contentDescription = "Archive selected",
+                tint = palette.subtext,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.DeleteOutline,
+                contentDescription = "Delete selected",
+                tint = NyxError,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeBottomNav(
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = LocalNyxPalette.current
+    val accent = LocalNyxAccent.current
+    val shape = RoundedCornerShape(22.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .clip(shape)
+            .background(palette.surface.copy(alpha = 0.94f))
+            .border(1.dp, palette.glassBorder, shape)
+            .padding(horizontal = 6.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        homeTabs.forEach { tab ->
+            val selected = currentRoute == tab.route
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onNavigate(tab.route) }
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    imageVector = tab.icon,
+                    contentDescription = tab.label,
+                    tint = if (selected) accent else palette.subtext,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = tab.label,
+                    style = NyxCaption,
+                    color = if (selected) accent else palette.subtext,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+private data class HomeTab(
+    val label: String,
+    val route: String,
+    val icon: ImageVector,
+)
+
+private val homeTabs = listOf(
+    HomeTab("Notes", Screen.Home.route, Icons.Outlined.Notes),
+    HomeTab("Pinned", Screen.Pinned.route, Icons.Outlined.PushPin),
+    HomeTab("Archive", Screen.Archive.route, Icons.Outlined.Archive),
+    HomeTab("Settings", Screen.Settings.route, Icons.Outlined.Settings),
+)
+
+@Composable
+private fun TagFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val palette = LocalNyxPalette.current
+    val accent = LocalNyxAccent.current
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (selected) accent.copy(alpha = 0.16f) else palette.card)
+            .border(
+                width = 1.dp,
+                color = if (selected) accent.copy(alpha = 0.55f) else palette.glassBorder,
+                shape = shape,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = label,
+            style = NyxCaption,
+            color = if (selected) accent else palette.subtext,
+            maxLines = 1,
         )
     }
 }

@@ -25,6 +25,8 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String,
     onAppUnlocked: () -> Unit,
+    scanQrRequest: Boolean,
+    onScanQrConsumed: () -> Unit,
 ) {
     val openDrawerRoute: (String) -> Unit = { route ->
         when (route) {
@@ -87,6 +89,8 @@ fun NavGraph(
                 onOpenNote = openEditor,
                 onNewNote = { openEditor(0L) },
                 onNavigate = openDrawerRoute,
+                scanQrRequest = scanQrRequest,
+                onScanQrConsumed = onScanQrConsumed,
             )
         }
 

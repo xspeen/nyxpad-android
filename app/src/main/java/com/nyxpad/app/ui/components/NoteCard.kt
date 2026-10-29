@@ -4,6 +4,8 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -21,10 +23,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,6 +62,7 @@ fun NoteCard(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
+    onMore: (() -> Unit)? = null,
 ) {
     val palette = LocalNyxPalette.current
     val accent = LocalNyxAccent.current
@@ -95,6 +101,7 @@ fun NoteCard(
                 )
                 .clip(shape)
                 .background(cardColor)
+                .border(1.dp, palette.glassBorder, shape)
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
@@ -130,6 +137,13 @@ fun NoteCard(
                         modifier = Modifier.size(15.dp),
                     )
                 }
+                if (onMore != null) {
+                    NoteOverflowButton(
+                        onClick = onMore,
+                        tint = palette.subtext,
+                        modifier = Modifier.padding(start = 2.dp),
+                    )
+                }
             }
             if (previewText.isNotBlank()) {
                 Spacer(Modifier.height(6.dp))
@@ -140,6 +154,20 @@ fun NoteCard(
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (note.tags.isNotEmpty()) {
+                Spacer(Modifier.height(7.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    note.tags.take(2).forEach { tag ->
+                        Text(
+                            text = "#$tag",
+                            style = NyxCaption,
+                            color = accent.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
             Spacer(Modifier.height(12.dp))
             Row(
@@ -182,6 +210,7 @@ fun NoteCard(
                 )
                 .clip(shape)
                 .background(cardColor)
+                .border(1.dp, palette.glassBorder, shape)
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
@@ -225,12 +254,28 @@ fun NoteCard(
                             modifier = Modifier.size(14.dp),
                         )
                     }
+                    if (onMore != null) {
+                        NoteOverflowButton(
+                            onClick = onMore,
+                            tint = palette.subtext,
+                        )
+                    }
                 }
                 if (previewText.isNotBlank()) {
                     Text(
                         text = previewText,
                         style = NyxBodySmall,
                         color = palette.subtext,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                if (note.tags.isNotEmpty()) {
+                    Text(
+                        text = note.tags.take(3).joinToString("  ") { "#$it" },
+                        style = NyxCaption,
+                        color = accent.copy(alpha = 0.9f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp),
@@ -266,5 +311,27 @@ fun NoteCard(
                     .size(18.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun NoteOverflowButton(
+    onClick: () -> Unit,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.MoreVert,
+            contentDescription = "Note actions",
+            tint = tint,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }

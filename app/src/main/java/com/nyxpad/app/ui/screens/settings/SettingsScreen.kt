@@ -1,6 +1,10 @@
 package com.nyxpad.app.ui.screens.settings
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -63,6 +67,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyxpad.app.BuildConfig
 import com.nyxpad.app.data.preferences.AccentChoice
+import com.nyxpad.app.data.preferences.BackgroundStyle
 import com.nyxpad.app.data.preferences.NyxFontStyle
 import com.nyxpad.app.data.preferences.NyxSettings
 import com.nyxpad.app.data.preferences.NyxTheme
@@ -82,6 +87,7 @@ import com.nyxpad.app.ui.theme.NyxError
 import com.nyxpad.app.ui.theme.NyxHeadline
 import com.nyxpad.app.ui.theme.NyxLabel
 import com.nyxpad.app.ui.theme.accentFor
+import com.nyxpad.app.utils.BackgroundManager
 import com.nyxpad.app.utils.BiometricUtils
 import com.nyxpad.app.utils.ExportUtils
 import com.nyxpad.app.utils.PreferencesKeys
@@ -108,7 +114,104 @@ fun SettingsScreen(
 
     var showPurgeDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
     var exporting by remember { mutableStateOf(false) }
+
+    val exportBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                viewModel.exportBackup(uri)
+                    .onSuccess { count ->
+                        Toast.makeText(
+                            context,
+                            "Backup saved with $count notes",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    .onFailure { error ->
+                        Toast.makeText(
+                            context,
+                            error.message ?: "Could not save the backup",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            }
+        }
+    }
+
+    val restoreBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) pendingRestoreUri = uri
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                viewModel.importTextFiles(uris)
+                    .onSuccess { count ->
+                        Toast.makeText(
+                            context,
+                            "Imported $count notes",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    .onFailure { error ->
+                        Toast.makeText(
+                            context,
+                            error.message ?: "Could not import those files",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            }
+        }
+    }
+
+    val exportMarkdownLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/markdown"),
+    ) { uri ->
+        exporting = false
+        if (uri != null) {
+            scope.launch {
+                viewModel.exportMarkdown(uri)
+                    .onSuccess { count ->
+                        Toast.makeText(
+                            context,
+                            "Exported $count notes",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    .onFailure { error ->
+                        Toast.makeText(
+                            context,
+                            error.message ?: "Could not export notes",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            }
+        }
+    }
+
+    val backgroundPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val path = BackgroundManager.copyToAppStorage(context, uri)
+                if (path == null) {
+                    Toast.makeText(context, "Could not read that image", Toast.LENGTH_SHORT).show()
+                } else {
+                    viewModel.setCustomBackgroundPath(path)
+                    viewModel.setBackgroundStyle(BackgroundStyle.Custom)
+                    Toast.makeText(context, "Background updated", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     fun toggleAppLock(enabled: Boolean) {
         val host = activity
@@ -159,7 +262,7 @@ fun SettingsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(palette.background),
+            .background(Color.Transparent),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             NyxScreenHeader(
@@ -227,6 +330,51 @@ fun SettingsScreen(
                                         .clickable { viewModel.setAccent(choice) },
                                 )
                             }
+                        }
+                        Text(
+                            text = "Background",
+                            style = NyxLabel,
+                            color = palette.subtext,
+                            modifier = Modifier.padding(start = 16.dp, top = 18.dp, bottom = 9.dp),
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            BackgroundStyle.entries.forEach { style ->
+                                ChoiceChip(
+                                    label = style.label,
+                                    selected = settings.backgroundStyle == style,
+                                    onClick = {
+                                        viewModel.setBackgroundStyle(style)
+                                        if (style == BackgroundStyle.Custom) {
+                                            backgroundPicker.launch(
+                                                PickVisualMediaRequest(
+                                                    ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                                ),
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                        if (settings.backgroundStyle == BackgroundStyle.Custom) {
+                            SettingsNavRow(
+                                icon = Icons.Outlined.Palette,
+                                title = "Choose background photo",
+                                subtitle = "Pick an image from your gallery",
+                                value = null,
+                                onClick = {
+                                    backgroundPicker.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                        ),
+                                    )
+                                },
+                            )
                         }
                         Text(
                             text = "Editor font",
@@ -307,12 +455,52 @@ fun SettingsScreen(
                             onCheckedChange = ::toggleAppLock,
                         )
                         SettingsDivider()
+                        SettingsSwitchRow(
+                            icon = Icons.Outlined.Shield,
+                            title = "Nearby sharing (NyxDrop)",
+                            subtitle = "Share a note to a browser on your Wi-Fi; off by default",
+                            checked = settings.onlineFeatures,
+                            onCheckedChange = viewModel::setOnlineFeatures,
+                        )
+                        SettingsDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.DeleteOutline,
                             title = "Auto-purge trash",
                             subtitle = "Deleted notes are removed automatically",
                             value = settings.autoPurgeLabel,
                             onClick = { showPurgeDialog = true },
+                        )
+                    }
+                }
+
+                item {
+                    SettingsGroup(title = "Backup & restore") {
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Save,
+                            title = "Export backup",
+                            subtitle = "Notes, tags, templates and settings in one file",
+                            value = null,
+                            onClick = {
+                                exportBackupLauncher.launch(
+                                    "nyxpad-backup-${LocalDate.now()}.json",
+                                )
+                            },
+                        )
+                        SettingsDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Refresh,
+                            title = "Restore backup",
+                            subtitle = "Merge with your notes or replace everything",
+                            value = null,
+                            onClick = { restoreBackupLauncher.launch(arrayOf("*/*")) },
+                        )
+                        SettingsDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Notes,
+                            title = "Import Markdown or text",
+                            subtitle = "Turn .md and .txt files into notes",
+                            value = null,
+                            onClick = { importLauncher.launch(arrayOf("*/*")) },
                         )
                     }
                 }
@@ -325,10 +513,15 @@ fun SettingsScreen(
                             subtitle = if (exporting) {
                                 "Preparing your Markdown export…"
                             } else {
-                                "Share every note as one Markdown file"
+                                "Save every note as one Markdown file"
                             },
                             value = null,
-                            onClick = ::exportAll,
+                            onClick = {
+                                exporting = true
+                                exportMarkdownLauncher.launch(
+                                    "nyxpad-notes-${LocalDate.now()}.md",
+                                )
+                            },
                         )
                         SettingsDivider()
                         SettingsNavRow(
@@ -379,7 +572,7 @@ fun SettingsScreen(
                         )
                         Spacer(Modifier.height(7.dp))
                         Text(
-                            text = "No accounts. No tracking. No cloud.",
+                            text = "No accounts. No tracking. No cloud by default.",
                             style = NyxCaption,
                             color = palette.subtext.copy(alpha = 0.8f),
                         )
@@ -387,6 +580,84 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    if (pendingRestoreUri != null) {
+        val restoreUri = pendingRestoreUri
+        AlertDialog(
+            onDismissRequest = { pendingRestoreUri = null },
+            title = { Text("Restore backup", color = palette.text) },
+            text = {
+                Text(
+                    text = "Merge adds the backup's notes to your current library. " +
+                        "Replace removes every current note and template first. " +
+                        "Settings from the backup are applied either way.",
+                    style = NyxBodySmall,
+                    color = palette.subtext,
+                )
+            },
+            confirmButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            pendingRestoreUri = null
+                            if (restoreUri != null) {
+                                scope.launch {
+                                    viewModel.restoreBackup(restoreUri, replace = false)
+                                        .onSuccess { count ->
+                                            Toast.makeText(
+                                                context,
+                                                "Merged $count notes",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                        .onFailure { error ->
+                                            Toast.makeText(
+                                                context,
+                                                error.message ?: "Could not restore that backup",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                }
+                            }
+                        },
+                    ) {
+                        Text("Merge", color = accent)
+                    }
+                    TextButton(
+                        onClick = {
+                            pendingRestoreUri = null
+                            if (restoreUri != null) {
+                                scope.launch {
+                                    viewModel.restoreBackup(restoreUri, replace = true)
+                                        .onSuccess { count ->
+                                            Toast.makeText(
+                                                context,
+                                                "Restored $count notes",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                        .onFailure { error ->
+                                            Toast.makeText(
+                                                context,
+                                                error.message ?: "Could not restore that backup",
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                }
+                            }
+                        },
+                    ) {
+                        Text("Replace", color = NyxError)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestoreUri = null }) {
+                    Text("Cancel", color = palette.subtext)
+                }
+            },
+        )
     }
 
     if (showPurgeDialog) {
@@ -515,7 +786,7 @@ private fun PrivacyIntroCard() {
                 color = palette.text,
             )
             Text(
-                text = "Your words stay on this device. NyxPad has no internet permission at all.",
+                text = "Your words stay on this device. NyxDrop sharing is local, optional and off by default.",
                 style = NyxBodySmall,
                 color = palette.subtext,
                 modifier = Modifier.padding(top = 3.dp),

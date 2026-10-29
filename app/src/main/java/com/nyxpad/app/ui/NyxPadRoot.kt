@@ -4,10 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.nyxpad.app.ui.components.AppLockGate
+import com.nyxpad.app.ui.components.NyxBackdrop
 import com.nyxpad.app.ui.navigation.NavGraph
 import com.nyxpad.app.ui.navigation.Screen
 
@@ -23,6 +21,8 @@ fun NyxPadRoot(
     startDestination: String,
     newNoteRequest: Boolean,
     onNewNoteConsumed: () -> Unit,
+    scanQrRequest: Boolean,
+    onScanQrConsumed: () -> Unit,
     appLocked: Boolean,
     appUnlocked: Boolean,
     onUnlock: () -> Unit,
@@ -31,15 +31,13 @@ fun NyxPadRoot(
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentEntry?.destination?.route
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
+    NyxBackdrop(modifier = Modifier.fillMaxSize()) {
         NavGraph(
             navController = navController,
             startDestination = startDestination,
             onAppUnlocked = onUnlock,
+            scanQrRequest = scanQrRequest,
+            onScanQrConsumed = onScanQrConsumed,
         )
 
         LaunchedEffect(newNoteRequest, currentRoute) {
@@ -58,6 +56,17 @@ fun NyxPadRoot(
                     navController.navigate(Screen.Editor.createRoute()) {
                         launchSingleTop = true
                     }
+                }
+            }
+        }
+
+        LaunchedEffect(scanQrRequest, currentRoute) {
+            if (!scanQrRequest || currentRoute == null) return@LaunchedEffect
+            if (currentRoute == Screen.Onboarding.route) return@LaunchedEffect
+            if (currentRoute != Screen.Home.route) {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { inclusive = false }
+                    launchSingleTop = true
                 }
             }
         }

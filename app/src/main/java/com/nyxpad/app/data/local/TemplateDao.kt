@@ -14,6 +14,12 @@ interface TemplateDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTemplate(template: TemplateEntity): Long
 
+    @Query("SELECT * FROM templates ORDER BY createdAt DESC")
+    suspend fun getAllTemplates(): List<TemplateEntity>
+
+    @Query("DELETE FROM templates")
+    suspend fun clearAllTemplates()
+
     @Query("DELETE FROM templates WHERE id = :id")
     suspend fun deleteTemplate(id: Long)
 }

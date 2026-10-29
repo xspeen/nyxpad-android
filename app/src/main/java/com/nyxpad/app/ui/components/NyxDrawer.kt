@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -83,6 +84,7 @@ fun NyxDrawer(
     onOpen: () -> Unit,
     onClose: () -> Unit,
     onNavigate: (String) -> Unit,
+    onScanQr: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalNyxPalette.current
@@ -115,6 +117,7 @@ fun NyxDrawer(
             DrawerEntry("Archive", Icons.Outlined.Inventory2, Screen.Archive.route),
             DrawerEntry("Trash", Icons.Outlined.DeleteOutline, Screen.Trash.route),
             DrawerEntry("Writing Stats", Icons.Outlined.BarChart, Screen.Stats.route),
+            DrawerEntry("Scan QR note", Icons.Outlined.QrCodeScanner, "scan_qr"),
             DrawerEntry("Settings", Icons.Outlined.Settings, Screen.Settings.route),
             DrawerEntry("About NyxPad", Icons.Outlined.Info, Screen.About.route),
         )
@@ -166,7 +169,7 @@ fun NyxDrawer(
                 .width(drawerWidth)
                 .fillMaxHeight()
                 .statusBarsPadding()
-                .background(palette.surface)
+                .background(palette.surface.copy(alpha = 0.92f))
                 .drawBehind {
                     drawLine(
                         color = palette.border,
@@ -244,7 +247,11 @@ fun NyxDrawer(
                                 shape = RoundedCornerShape(12.dp),
                             )
                             .clickable {
-                                onNavigate(entry.route)
+                                if (entry.route == "scan_qr") {
+                                    onScanQr()
+                                } else {
+                                    onNavigate(entry.route)
+                                }
                                 onClose()
                             }
                             .padding(horizontal = 16.dp),
