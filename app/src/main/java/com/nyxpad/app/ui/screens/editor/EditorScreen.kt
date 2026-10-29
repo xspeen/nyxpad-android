@@ -66,6 +66,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -114,8 +115,11 @@ import com.nyxpad.app.ui.theme.NyxWhite
 import com.nyxpad.app.ui.theme.moodColor
 import com.nyxpad.app.ui.theme.tagColor
 import com.nyxpad.app.utils.BiometricUtils
+import com.nyxpad.app.utils.ClipboardUtils
 import com.nyxpad.app.utils.DateUtils
 import com.nyxpad.app.utils.ExportUtils
+import com.nyxpad.app.utils.NyxDropServer
+import com.nyxpad.app.utils.NyxDropSession
 import com.nyxpad.app.utils.QrCodeUtils
 import com.nyxpad.app.utils.findFragmentActivity
 import io.noties.markwon.AbstractMarkwonPlugin
@@ -151,6 +155,14 @@ fun EditorScreen(
     var tagText by remember { mutableStateOf("") }
     var showQrDialog by remember { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showDropDialog by remember { mutableStateOf(false) }
+    var dropSession by remember { mutableStateOf<NyxDropSession?>(null) }
+    var dropQr by remember { mutableStateOf<Bitmap?>(null) }
+    var dropMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(dropSession) {
+        onDispose { dropSession?.stop() }
+    }
 
     LaunchedEffect(state.isLoading) {
         if (!state.isLoading) {
@@ -293,6 +305,15 @@ fun EditorScreen(
                 QrCodeUtils.generate(
                     QrCodeUtils.payload(state.title, state.content),
                 )
+            }
+        }
+    }
+
+    LaunchedEffect(showDropDialog, dropSession) {
+        val session = dropSession
+        if (showDropDialog && session != null) {
+            dropQr = withContext(Dispatchers.Default) {
+                QrCodeUtils.generate(session.url, size = 640)
             }
         }
     }
@@ -473,6 +494,38 @@ fun EditorScreen(
                             menuOpen = false
                             qrBitmap = null
                             showQrDialog = true
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("NyxDrop to nearby device") },
+                        onClick = {
+                            menuOpen = false
+                            viewModel.saveNow()
+                            dropQr = null
+                            if (!state.settings.onlineFeatures) {
+                                dropMessage = "Nearby sharing is off. Turn it on in " +
+                                    "Settings → Nearby sharing, then try again."
+                                dropSession?.stop()
+                                dropSession = null
+                                showDropDialog = true
+                            } else {
+                                val session = NyxDropServer.start(
+                                    state.title,
+                                    state.content,
+                                )
+                                if (session == null) {
+                                    dropMessage = "Connect this device to Wi-Fi first. " +
+                                        "NyxDrop needs a local network."
+                                    dropSession?.stop()
+                                    dropSession = null
+                                    showDropDialog = true
+                                } else {
+                                    dropMessage = null
+                                    dropSession?.stop()
+                                    dropSession = session
+                                    showDropDialog = true
+                                }
+                            }
                         },
                     )
                     DropdownMenuItem(
@@ -751,6 +804,92 @@ fun EditorScreen(
             confirmButton = {
                 TextButton(onClick = { showQrDialog = false }) {
                     Text("Close", color = accent)
+                }
+            },
+        )
+    }
+
+    if (showDropDialog) {
+        val session = dropSession
+        AlertDialog(
+            onDismissRequest = {
+                showDropDialog = false
+                dropSession?.stop()
+                dropSession = null
+                dropQr = null
+            },
+            title = { Text("NyxDrop", color = palette.text) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (session == null) {
+                        Text(
+                            text = dropMessage ?: "NyxDrop could not start.",
+                            style = NyxBodySmall,
+                            color = palette.subtext,
+                        )
+                    } else {
+                        Text(
+                            text = "Open this address in any browser on the same Wi-Fi. " +
+                                "It works on Windows, macOS, Linux, Android and iOS — " +
+                                "no app or account needed.",
+                            style = NyxBodySmall,
+                            color = palette.subtext,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = session.url,
+                            style = NyxBody,
+                            color = accent,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButton(
+                            onClick = {
+                                ClipboardUtils.copyToClipboard(
+                                    context,
+                                    "NyxDrop link",
+                                    session.url,
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Link copied",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                        ) {
+                            Text("Copy link", color = accent)
+                        }
+                        val bitmap = dropQr
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "QR code for the NyxDrop link",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .size(190.dp)
+                                    .background(NyxWhite, RoundedCornerShape(12.dp))
+                                    .padding(10.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "Sharing stops when you close this dialog or after " +
+                                "10 minutes.",
+                            style = NyxCaption,
+                            color = palette.subtext,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDropDialog = false
+                        dropSession?.stop()
+                        dropSession = null
+                        dropQr = null
+                    },
+                ) {
+                    Text(if (session == null) "Close" else "Stop sharing", color = accent)
                 }
             },
         )

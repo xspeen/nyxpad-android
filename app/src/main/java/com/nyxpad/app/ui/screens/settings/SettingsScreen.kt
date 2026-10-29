@@ -457,8 +457,8 @@ fun SettingsScreen(
                         SettingsDivider()
                         SettingsSwitchRow(
                             icon = Icons.Outlined.Shield,
-                            title = "Optional online features",
-                            subtitle = "Link previews only when you turn this on",
+                            title = "Nearby sharing (NyxDrop)",
+                            subtitle = "Share a note to a browser on your Wi-Fi; off by default",
                             checked = settings.onlineFeatures,
                             onCheckedChange = viewModel::setOnlineFeatures,
                         )
@@ -786,7 +786,7 @@ private fun PrivacyIntroCard() {
                 color = palette.text,
             )
             Text(
-                text = "Your words stay on this device. Online features are optional and off by default.",
+                text = "Your words stay on this device. NyxDrop sharing is local, optional and off by default.",
                 style = NyxBodySmall,
                 color = palette.subtext,
                 modifier = Modifier.padding(top = 3.dp),

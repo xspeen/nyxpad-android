@@ -2,7 +2,7 @@
 
 **A private, offline home for your words.**
 
-NyxPad is a free and open-source notes app for Android, built with Kotlin and Jetpack Compose. It is designed for writing without limits: no accounts, no internet permission, no analytics, no ads and no cloud. Every note stays in the app's private storage on your device.
+NyxPad is a free and open-source notes app for Android, built with Kotlin and Jetpack Compose. It is designed for writing without limits: no accounts, no analytics, no ads and no cloud. Every note stays in the app's private storage on your device. NyxPad works fully offline; the internet permission exists only for opt-in NyxDrop sharing to a browser on your own Wi-Fi.
 
 [![Android CI](https://github.com/xspeen/nyxpad-android/actions/workflows/android.yml/badge.svg)](https://github.com/xspeen/nyxpad-android/actions/workflows/android.yml)
 
@@ -16,16 +16,21 @@ NyxPad runs on Android 8.0 (API 26) and newer. Release APKs are signed with the 
 
 ## Features
 
-- **Private by design** — no internet permission, accounts, tracking, Firebase, ads or cloud backup. Android backup is disabled.
+- **Private by default** — no accounts, tracking, Firebase, ads or cloud backup. Android backup is disabled. The internet permission is used only by opt-in NyxDrop sharing.
 - **A complete writing environment** — distraction-free editor, focus mode, auto-save, word and character counts, reading time and writing moods.
-- **Make it yours** — Lumina Dark, Pure AMOLED and Midnight Blue themes; eight accent colours; Inter, JetBrains Mono and system fonts; adjustable editor size and line spacing.
-- **Stay organised** — pin, archive, search, sort, colour-tag and duplicate notes; grid and list layouts; pull to refresh.
+- **Markdown** — formatting toolbar, live preview, checklists, links and code formatting, rendered with Markwon.
+- **Voice input** — dictate into a note with the device's speech recogniser when one is installed.
+- **Make it yours** — Lumina Dark, Pure AMOLED and Midnight Blue themes; eight accent colours; Inter, JetBrains Mono and system fonts; adjustable editor size and line spacing; Aurora, Nebula, Ember, Ocean, Graphite or your own photo background.
+- **Stay organised** — pin, archive, search, sort, colour-tag and duplicate notes; add tags and filter with chips; grid and list layouts; pull to refresh.
+- **Multi-select** — long-press to select notes, then pin, archive, tag or delete them together, with undo for deletes.
 - **Templates** — built-in prompts plus your own reusable templates.
 - **Writing stats** — streaks, a 90-day calendar, weekly rhythm and six-month history.
 - **Trash with auto-purge** — restore notes or let WorkManager clean them up after a chosen period.
 - **Locks** — optional app lock and per-note locks using your device's biometric or PIN prompt. NyxPad never stores biometric data.
-- **Export and share** — share individual notes or export every note as one Markdown file through the Android share sheet.
-- **Home-screen widget** — one tap opens a fresh note.
+- **Backup and restore** — export notes, tags, templates and settings as one JSON file, merge or replace on restore, and import Markdown or text files.
+- **Export and share** — share individual notes, export Markdown, or send a note as a QR code. NyxPad also appears in the Android share sheet and text-selection menu.
+- **NyxDrop** — opt in to serve a note to any browser on the same Wi-Fi. Works with Windows, macOS, Linux, Android and iOS without installing anything.
+- **Shortcuts** — launcher shortcuts, a Quick Settings tile and a home-screen widget open a fresh note.
 - **No placeholders** — every screen is implemented, from onboarding and the navigation drawer to About and settings.
 
 ## Screens
@@ -41,6 +46,8 @@ Onboarding · Home · Pinned · Editor · Settings · Trash · Archive · Writin
 | Architecture | MVVM + Clean Architecture |
 | Persistence | Room 2.6.1 |
 | Settings | DataStore Preferences |
+| Markdown | Markwon 4.6.2 |
+| QR | ZXing 3.5.3 + zxing-android-embedded 4.3.0 |
 | Dependency injection | Hilt 2.51.1 |
 | Background work | WorkManager 2.9.0 |
 | Build | Gradle 8.9, AGP 8.7.3, JDK 17 |

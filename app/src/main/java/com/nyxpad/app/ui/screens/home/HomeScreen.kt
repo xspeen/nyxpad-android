@@ -39,8 +39,10 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -387,7 +389,7 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = 72.dp),
+                            .padding(bottom = 148.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         val title = when {
@@ -426,7 +428,7 @@ fun HomeScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 4.dp,
-                            bottom = 124.dp,
+                            bottom = 196.dp,
                         ),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -489,7 +491,7 @@ fun HomeScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 4.dp,
-                            bottom = 124.dp,
+                            bottom = 196.dp,
                         ),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -554,7 +556,13 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 20.dp, bottom = 22.dp),
+                .padding(end = 20.dp, bottom = 96.dp),
+        )
+
+        HomeBottomNav(
+            currentRoute = if (pinnedOnly) Screen.Pinned.route else Screen.Home.route,
+            onNavigate = onNavigate,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
 
         NyxDrawer(
@@ -571,7 +579,7 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 96.dp),
+                .padding(bottom = 160.dp),
         )
     }
 
@@ -1012,6 +1020,68 @@ private fun SelectionTopBar(
         }
     }
 }
+
+@Composable
+private fun HomeBottomNav(
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = LocalNyxPalette.current
+    val accent = LocalNyxAccent.current
+    val shape = RoundedCornerShape(22.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .clip(shape)
+            .background(palette.surface.copy(alpha = 0.94f))
+            .border(1.dp, palette.glassBorder, shape)
+            .padding(horizontal = 6.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        homeTabs.forEach { tab ->
+            val selected = currentRoute == tab.route
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { onNavigate(tab.route) }
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    imageVector = tab.icon,
+                    contentDescription = tab.label,
+                    tint = if (selected) accent else palette.subtext,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = tab.label,
+                    style = NyxCaption,
+                    color = if (selected) accent else palette.subtext,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+private data class HomeTab(
+    val label: String,
+    val route: String,
+    val icon: ImageVector,
+)
+
+private val homeTabs = listOf(
+    HomeTab("Notes", Screen.Home.route, Icons.Outlined.Notes),
+    HomeTab("Pinned", Screen.Pinned.route, Icons.Outlined.PushPin),
+    HomeTab("Archive", Screen.Archive.route, Icons.Outlined.Archive),
+    HomeTab("Settings", Screen.Settings.route, Icons.Outlined.Settings),
+)
 
 @Composable
 private fun TagFilterChip(

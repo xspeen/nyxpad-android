@@ -129,7 +129,9 @@ fun AboutScreen(
                 AboutCard(
                     icon = Icons.Outlined.Shield,
                     title = "Private by design",
-                    body = "NyxPad has no internet permission. There are no accounts, " +
+                    body = "NyxPad works fully offline. The internet permission exists only " +
+                        "for optional NyxDrop sharing, which serves a note to a browser on " +
+                        "your own Wi-Fi and is off by default. There are no accounts, " +
                         "no analytics, no trackers, no ads and no cloud backup. Everything " +
                         "you write stays in this app's private storage on this device.",
                 )
