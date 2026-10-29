@@ -1154,7 +1154,6 @@ private fun MarkdownPreview(
                             .codeBlockTextColor(palette.text.toArgb())
                             .codeBlockBackgroundColor(palette.card.toArgb())
                             .thematicBreakColor(palette.divider.toArgb())
-                            .tableBorderColor(palette.glassBorder.toArgb())
                     }
                 },
             )

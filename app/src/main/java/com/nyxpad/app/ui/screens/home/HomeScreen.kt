@@ -175,19 +175,6 @@ fun HomeScreen(
         if (selectedIds.isEmpty()) selectionMode = false
     }
 
-    fun handleNoteClick(note: Note) {
-        if (selectionMode) toggleSelection(note) else openNote(note)
-    }
-
-    fun handleNoteLongPress(note: Note) {
-        if (selectionMode) {
-            toggleSelection(note)
-        } else {
-            selectionMode = true
-            selectedIds = setOf(note.id)
-        }
-    }
-
     fun deleteWithUndo(ids: List<Long>) {
         if (ids.isEmpty()) return
         viewModel.bulkDelete(ids)
@@ -243,6 +230,19 @@ fun HomeScreen(
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             },
         )
+    }
+
+    fun handleNoteClick(note: Note) {
+        if (selectionMode) toggleSelection(note) else openNote(note)
+    }
+
+    fun handleNoteLongPress(note: Note) {
+        if (selectionMode) {
+            toggleSelection(note)
+        } else {
+            selectionMode = true
+            selectedIds = setOf(note.id)
+        }
     }
 
     fun toggleNoteLock(note: Note) {
