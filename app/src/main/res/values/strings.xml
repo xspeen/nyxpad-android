@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NyxPad</string>
+    <string name="app_tagline">Write without limits</string>
+    <string name="widget_description">Open a new NyxPad note instantly.</string>
+    <string name="widget_prompt">Write something…</string>
+</resources>
