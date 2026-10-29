@@ -105,7 +105,7 @@ fun OnboardingScreen(
 ) {
     val palette = LocalNyxPalette.current
     val accent = LocalNyxAccent.current
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { slides.size })
+    val pagerState = rememberPagerState(initialPage = 0)
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val isLast = pagerState.currentPage == slides.lastIndex
@@ -116,6 +116,7 @@ fun OnboardingScreen(
             .background(NyxBackground),
     ) {
         HorizontalPager(
+            count = slides.size,
             state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
