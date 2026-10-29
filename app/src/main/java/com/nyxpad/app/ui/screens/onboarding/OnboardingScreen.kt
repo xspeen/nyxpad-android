@@ -396,13 +396,13 @@ private fun LockShieldIllustration() {
             moveTo(cx, cy - size.height * 0.28f)
             lineTo(cx + size.width * 0.24f, cy - size.height * 0.18f)
             lineTo(cx + size.width * 0.20f, cy + size.height * 0.10f)
-            quadraticTo(
+            quadraticBezierTo(
                 cx + size.width * 0.12f,
                 cy + size.height * 0.25f,
                 cx,
                 cy + size.height * 0.31f,
             )
-            quadraticTo(
+            quadraticBezierTo(
                 cx - size.width * 0.12f,
                 cy + size.height * 0.25f,
                 cx - size.width * 0.20f,
