@@ -10,9 +10,9 @@ NyxPad is a free and open-source notes app for Android, built with Kotlin and Je
 
 Install the latest APK from the [Releases page](https://github.com/xspeen/nyxpad-android/releases/latest). Every release is built by GitHub Actions directly from the tagged source.
 
-You can also download the **nyxpad-debug-apk** artifact from the latest successful **Android CI** run in the **Actions** tab.
+You can also download the **nyxpad-apk** artifact from the latest successful **Android CI** run in the **Actions** tab.
 
-NyxPad runs on Android 8.0 (API 26) and newer. Debug APKs are signed with the Android debug key, so Android may ask you to allow installation from your browser or file manager the first time.
+NyxPad runs on Android 8.0 (API 26) and newer. Release APKs are signed with the project's CI key so later versions install over earlier ones without uninstalling. Android may ask you to allow installation from your browser or file manager the first time.
 
 ## Features
 

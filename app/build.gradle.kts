@@ -20,9 +20,33 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    val ciKeystorePath = System.getenv("NYXPAD_KEYSTORE_PATH")
+    val ciKeystorePassword = System.getenv("NYXPAD_KEYSTORE_PASSWORD")
+    val ciKeyAlias = System.getenv("NYXPAD_KEY_ALIAS")
+    val ciKeyPassword = System.getenv("NYXPAD_KEY_PASSWORD")
+    val hasCiSigning = !ciKeystorePath.isNullOrBlank() &&
+        !ciKeystorePassword.isNullOrBlank() &&
+        !ciKeyAlias.isNullOrBlank() &&
+        !ciKeyPassword.isNullOrBlank() &&
+        ciKeystorePath?.let { file(it).exists() } == true
+
+    signingConfigs {
+        if (hasCiSigning) {
+            create("ci") {
+                storeFile = file(ciKeystorePath!!)
+                storePassword = ciKeystorePassword
+                keyAlias = ciKeyAlias
+                keyPassword = ciKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasCiSigning) {
+                signingConfig = signingConfigs.getByName("ci")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
